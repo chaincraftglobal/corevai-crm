@@ -1,130 +1,70 @@
-/**
- * CoreVAI Virtual Tracker - Browser Utility
- * ✅ Works locally (Mac/Windows/Linux) and in Vercel serverless
- * ✅ Uses puppeteer-core + @sparticuz/chromium for Lambda environments
- * ✅ Automatically detects Chrome/Chromium path
- */
-
-import puppeteer, { type Browser, type Page } from "puppeteer-core";
+import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 
-// ---------------------------------------------------------------------------
-// 🧩 Detect environment (Local vs Serverless)
-// ---------------------------------------------------------------------------
-
-const IS_SERVERLESS =
-  process.env.VERCEL === "1" ||
-  !!process.env.AWS_LAMBDA_FUNCTION_VERSION ||
-  process.env.NODE_ENV === "production";
-
 /**
- * Launch a Chromium or Chrome browser instance.
- * Automatically chooses the correct executable for the environment.
+ * Launches Chromium automatically:
+ * - Uses Sparticuz Chromium in Vercel/AWS
+ * - Falls back to local Chrome in development
  */
-export async function launchBrowser(): Promise<Browser> {
-  const executablePath = await chromium.executablePath();
+export async function launchBrowser() {
+  // Get path for Vercel-compatible Chromium binary
+  let executablePath = await chromium.executablePath();
+
+  // 🧠 Local dev fallback (Mac / Linux)
+  if (!executablePath) {
+    executablePath =
+      process.env.PUPPETEER_EXECUTABLE_PATH ||
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  }
+
+  console.log("🚀 Launching browser from:", executablePath);
 
   const browser = await puppeteer.launch({
     args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: executablePath || undefined,
-    headless: chromium.headless,
+    executablePath,
+    headless:
+      process.env.NODE_ENV === "production"
+        ? true // always headless in Vercel
+        : process.env.PUPPETEER_HEADLESS === "true",
   });
 
   return browser;
 }
 
-// ---------------------------------------------------------------------------
-// 📸 Screenshot Helper
-// ---------------------------------------------------------------------------
-
 /**
- * Takes a screenshot and saves to `/tmp` (serverless-safe) or local dir.
- */
-export async function takeScreenshot(
-  page: Page,
-  fileBase = "vt-screenshot"
-): Promise<string> {
-  const filePath =
-    IS_SERVERLESS
-      ? `/tmp/${fileBase}-${Date.now()}.png`
-      : `./screenshots/${fileBase}-${Date.now()}.png`;
-
-  await page.screenshot({
-    path: filePath as `${string}.png`,
-    fullPage: true,
-    type: "png",
-  });
-  console.log(`[Browser] Screenshot saved at: ${filePath}`);
-  return filePath;
-}
-
-// ---------------------------------------------------------------------------
-// 🔐 Credential Validation (for /validate endpoint)
-// ---------------------------------------------------------------------------
-
-/**
- * Validates a login by attempting to sign in to eVirtualPay (or custom URL)
- * Returns success/failure + screenshot of the attempt.
+ * Validate login credentials for eVirtualPay.
+ * Only checks login success/failure.
  */
 export async function validateCredentials(
   loginUrl: string,
   username: string,
   password: string
-): Promise<{ ok: boolean; message: string; screenshot: string }> {
+) {
   const browser = await launchBrowser();
   const page = await browser.newPage();
 
   try {
-    console.log(`[Validate] Navigating to ${loginUrl}`);
-    await page.goto(loginUrl, { waitUntil: "networkidle2", timeout: 180000 });
+    await page.goto(loginUrl, { waitUntil: "networkidle2", timeout: 120000 });
 
-    // Wait for login inputs (supports multiple form types)
     await page.waitForSelector("input[name='username'], #username", {
       timeout: 30000,
     });
+    await page.type("input[name='username'], #username", username, { delay: 50 });
+
     await page.waitForSelector("input[name='password'], #password", {
       timeout: 30000,
     });
+    await page.type("input[name='password'], #password", password, { delay: 50 });
 
-    // Fill form and submit
-    await page.type("input[name='username'], #username", username, {
-      delay: 50,
-    });
-    await page.type("input[name='password'], #password", password, {
-      delay: 50,
-    });
-    await Promise.all([
-      page.click("button[type='submit'], #login-button, .btn-primary"),
-      page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 }),
-    ]);
+    await page.click("button[type='submit'], #login_button");
+    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 });
 
-    // Screenshot after login
-    const screenshot = await takeScreenshot(page, "login-success");
-
-    // Check if login was successful (basic heuristic)
-    const success = !(
-      (await page.$("input[name='password'], #password")) ||
-      (await page.$(".error, .alert-danger"))
-    );
-
-    await browser.close();
-
-    return {
-      ok: success,
-      message: success
-        ? "✅ Authentication successful"
-        : "❌ Invalid username or password",
-      screenshot,
-    };
+    const screenshot = await page.screenshot({ encoding: "base64" });
+    return { ok: true, message: "Login successful", screenshot };
   } catch (err: any) {
-    console.error("[Validate] Login validation error:", err);
-    const screenshot = await takeScreenshot(page, "login-error");
+    console.error("❌ Validation failed:", err);
+    return { ok: false, message: `Validation failed: ${err.message}` };
+  } finally {
     await browser.close();
-    return {
-      ok: false,
-      message: `❌ Validation failed: ${err.message || "Unknown error"}`,
-      screenshot,
-    };
   }
 }
