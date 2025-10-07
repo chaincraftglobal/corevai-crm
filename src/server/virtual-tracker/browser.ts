@@ -1,70 +1,204 @@
+// src/server/virtual-tracker/browser.ts
+import fs from "node:fs/promises";
+import path from "node:path";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
+import type { LaunchOptions, Browser, Page } from "puppeteer-core";
+
+type ValidateOptions = {
+  timeout?: number;
+  retryOnce?: boolean;
+};
+
+const isServerless =
+  !!process.env.VERCEL ||
+  !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.NODE_ENV === "production";
 
 /**
- * Launches Chromium automatically:
- * - Uses Sparticuz Chromium in Vercel/AWS
- * - Falls back to local Chrome in development
+ * Find an available Chrome or Chromium executable
  */
-export async function launchBrowser() {
-  // Get path for Vercel-compatible Chromium binary
-  let executablePath = await chromium.executablePath();
-
-  // 🧠 Local dev fallback (Mac / Linux)
-  if (!executablePath) {
-    executablePath =
-      process.env.PUPPETEER_EXECUTABLE_PATH ||
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+async function resolveExecutablePath(): Promise<string | undefined> {
+  // 1. Use env if provided
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
   }
 
-  console.log("🚀 Launching browser from:", executablePath);
+  // 2. Sparticuz (Vercel) auto binary
+  if (isServerless) {
+    try {
+      const p = await chromium.executablePath();
+      if (p) return p;
+    } catch (err) {
+      console.warn("[browser] chromium.executablePath() failed:", err);
+    }
+  }
 
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath,
-    headless:
-      process.env.NODE_ENV === "production"
-        ? true // always headless in Vercel
-        : process.env.PUPPETEER_HEADLESS === "true",
-  });
-
-  return browser;
+  // 3. Local fallbacks
+  const candidates = [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ];
+  for (const p of candidates) {
+    try {
+      await fs.access(p);
+      return p;
+    } catch { }
+  }
+  return undefined;
 }
 
 /**
- * Validate login credentials for eVirtualPay.
- * Only checks login success/failure.
+ * Launch browser
+ */
+export async function launchBrowser(): Promise<Browser> {
+  const executablePath = await resolveExecutablePath();
+
+  const headlessEnv = (process.env.PUPPETEER_HEADLESS ?? "true").toLowerCase();
+  const headless = headlessEnv === "true" || headlessEnv === "1";
+
+  const launchOpts: LaunchOptions = {
+    headless,
+    executablePath,
+    args: isServerless
+      ? chromium.args
+      : ["--no-sandbox", "--disable-dev-shm-usage"],
+  };
+
+  console.log("[browser] Launch:", {
+    env: isServerless ? "serverless" : "local",
+    headless,
+    executablePath,
+  });
+
+  return puppeteer.launch(launchOpts);
+}
+
+/**
+ * Helper for small delays (replaces removed page.waitForTimeout)
+ */
+async function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Wait for any selector among several
+ */
+async function waitForAnySelector(page: Page, selectors: string[], timeout: number) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    for (const sel of selectors) {
+      const el = await page.$(sel);
+      if (el) return sel;
+    }
+    await delay(200);
+  }
+  throw new Error(`Timeout: none of [${selectors.join(", ")}] appeared`);
+}
+
+/**
+ * Validate login credentials only (no transaction extraction)
  */
 export async function validateCredentials(
   loginUrl: string,
   username: string,
-  password: string
-) {
-  const browser = await launchBrowser();
-  const page = await browser.newPage();
+  password: string,
+  opts: ValidateOptions = {}
+): Promise<{ ok: boolean; message: string; screenshot: string }> {
+  const timeout = opts.timeout ?? 120_000;
 
-  try {
-    await page.goto(loginUrl, { waitUntil: "networkidle2", timeout: 120000 });
+  async function attempt() {
+    const browser = await launchBrowser();
+    const page = await browser.newPage();
+    let screenshot = "";
 
-    await page.waitForSelector("input[name='username'], #username", {
-      timeout: 30000,
-    });
-    await page.type("input[name='username'], #username", username, { delay: 50 });
+    try {
+      await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout });
 
-    await page.waitForSelector("input[name='password'], #password", {
-      timeout: 30000,
-    });
-    await page.type("input[name='password'], #password", password, { delay: 50 });
+      const userSel = await waitForAnySelector(
+        page,
+        ["input[name='username']", "#username", "input[name='email']", "#email"],
+        20000
+      );
+      await page.type(userSel, username, { delay: 30 });
 
-    await page.click("button[type='submit'], #login_button");
-    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 });
+      const passSel = await waitForAnySelector(
+        page,
+        ["input[name='password']", "#password", "input[type='password']"],
+        20000
+      );
+      await page.type(passSel, password, { delay: 30 });
 
-    const screenshot = await page.screenshot({ encoding: "base64" });
-    return { ok: true, message: "Login successful", screenshot };
-  } catch (err: any) {
-    console.error("❌ Validation failed:", err);
-    return { ok: false, message: `Validation failed: ${err.message}` };
-  } finally {
-    await browser.close();
+      try {
+        const btnSel = await waitForAnySelector(
+          page,
+          ["button[type='submit']", "input[type='submit']", "button:has-text('Login')"],
+          8000
+        );
+        await page.click(btnSel);
+      } catch {
+        await page.keyboard.press("Enter");
+      }
+
+      // Wait post-login or timeout
+      const start = Date.now();
+      let success = false;
+      while (Date.now() - start < 45000) {
+        const dashboardSel = await page.$("nav, a[href*='dashboard'], div[class*='sidebar']");
+        if (dashboardSel) {
+          success = true;
+          break;
+        }
+        await delay(500);
+      }
+
+      screenshot = await page.screenshot({ encoding: "base64" });
+      await browser.close();
+
+      return success
+        ? { ok: true, message: "Authenticated successfully", screenshot }
+        : { ok: false, message: "Login failed or dashboard not detected", screenshot };
+    } catch (err: any) {
+      try {
+        screenshot = await page.screenshot({ encoding: "base64" });
+      } catch { }
+      await browser.close();
+      return { ok: false, message: err.message || "Validation error", screenshot };
+    }
   }
+
+  const result = await attempt();
+  if (!result.ok && opts.retryOnce) {
+    console.warn("[browser] retrying once...");
+    return attempt();
+  }
+  return result;
 }
+
+/**
+ * Base64 screenshot helper
+ */
+export async function safeScreenshot(page: Page): Promise<string> {
+  return page.screenshot({ encoding: "base64" });
+}
+
+/**
+ * Save screenshot to file (safe for TS)
+ */
+export async function takeScreenshotToFile(page: Page, filePath: string): Promise<string> {
+  const buf = await page.screenshot({ type: "png" });
+  const dir = path.dirname(filePath);
+  await fs.mkdir(dir, { recursive: true });
+  const fixed = filePath.endsWith(".png") ? filePath : `${filePath}.png`;
+  await fs.writeFile(fixed, buf);
+  return fixed;
+}
+
+/** Dummy placeholders */
+export async function extractRows(): Promise<any[]> {
+  return [];
+}
+export async function loginEVirtualPay(): Promise<void> { }
