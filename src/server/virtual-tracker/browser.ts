@@ -1,45 +1,16 @@
 import puppeteer, { Browser, Page } from "puppeteer-core";
-import chromium from "@sparticuz/chromium-min";
+import chromium from "@sparticuz/chromium";
 
-function isVercel() {
-  // Vercel sets these at runtime/build; either check works
-  return process.env.VERCEL === "1" || process.env.NOW_BUILDER === "1";
-}
-
-/**
- * Launches Chrome/Chromium in both local dev and Vercel.
- * - On Vercel: uses @sparticuz/chromium-min
- * - Locally:   uses PUPPETEER_EXECUTABLE_PATH or typical Chrome locations
- */
 export async function launchBrowser(): Promise<Browser> {
-  if (isVercel()) {
-    // Vercel: bundled headless chromium from chromium-min
-    const execPath = await chromium.executablePath();
-    return puppeteer.launch({
-      executablePath: execPath,
-      args: chromium.args,
-      headless: true,
-      ignoreHTTPSErrors: true,
-    } as any);
-  }
-
-  // Local dev: use user-provided Chrome if set
-  const localExec =
-    process.env.PUPPETEER_EXECUTABLE_PATH ||
-    // Common macOS and Linux paths (best-effort)
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  const execPath =
+    process.env.PUPPETEER_EXECUTABLE_PATH || (await chromium.executablePath());
 
   return puppeteer.launch({
-    executablePath: localExec,
-    headless: process.env.PUPPETEER_HEADLESS === "false" ? false : true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--no-zygote",
-    ],
-  });
+    executablePath: execPath,
+    args: chromium.args,
+    headless: true,
+    ignoreHTTPSErrors: true,
+  } as any);
 }
 
 /** Small helper to pause without relying on deprecated page.waitForTimeout */

@@ -8,7 +8,7 @@ importers:
 
   .:
     dependencies:
-      '@sparticuz/chromium-min':
+      '@sparticuz/chromium':
         specifier: ^141.0.0
         version: 141.0.0
       bootstrap:
@@ -750,8 +750,8 @@ packages:
     resolution: {integrity: sha512-4aUIteuyxtBUhVdiQqcDhKFitwfd9hqoSDYY2KRXiWtgoWJ9Bmise+KfEPDiVHWeJepvF8xJO9/9+WDIciMFFw==}
     engines: {node: '>=18.0.0'}
 
-  '@sparticuz/chromium-min@141.0.0':
-    resolution: {integrity: sha512-1EAR1NBrY4sa0hysDUCxCSI+9xc88/LYB3YjWFqMMu3CF82ATp8FzOeu7icwGxI02NAPcwzb0Uf1kIzsfH7Eiw==}
+  '@sparticuz/chromium@141.0.0':
+    resolution: {integrity: sha512-JsTp4AqgStkqKki4dUpEM0GoisAjQhsqZ1lQTNMSKK5A9pw6BbIuIvv2HVYMYzSZGyDdQNJYBPPDg2eggCkezA==}
     engines: {node: '>=20.11.0'}
 
   '@swc/helpers@0.5.15':
@@ -3743,7 +3743,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@sparticuz/chromium-min@141.0.0':
+  '@sparticuz/chromium@141.0.0':
     dependencies:
       follow-redirects: 1.15.11
       tar-fs: 3.1.1

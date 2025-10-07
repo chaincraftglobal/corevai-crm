@@ -4,7 +4,7 @@ const nextConfig = {
     serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   },
   outputFileTracingIncludes: {
-    '/api/virtual-tracker/**': ['node_modules/@sparticuz/chromium/**'],
+    '/app/api/virtual-tracker/**': ['node_modules/@sparticuz/chromium/**'],
   },
 };
 
