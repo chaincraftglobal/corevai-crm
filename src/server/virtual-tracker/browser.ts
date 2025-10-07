@@ -22,41 +22,16 @@ const IS_SERVERLESS =
  * Automatically chooses the correct executable for the environment.
  */
 export async function launchBrowser(): Promise<Browser> {
-  const localExec = process.env.PUPPETEER_EXECUTABLE_PATH;
-  const isLocal = process.env.NODE_ENV !== "production" && !!localExec;
-
-  // --- 💻 Local Development Mode ------------------------------------------
-  if (isLocal) {
-    console.log("[Browser] Launching local Chrome at:", localExec);
-    return puppeteer.launch({
-      headless: false,
-      executablePath: localExec,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      defaultViewport: { width: 1366, height: 900 },
-    });
-  }
-
-  // --- ☁️ Serverless (Vercel / AWS Lambda) Mode ----------------------------
   const executablePath = await chromium.executablePath();
 
-  if (!executablePath) {
-    throw new Error(
-      "❌ Could not find a valid Chromium executable path. Ensure @sparticuz/chromium is installed."
-    );
-  }
-
-  console.log("[Browser] Launching serverless Chromium...");
-  return puppeteer.launch({
-    headless: true,
-    executablePath,
-    args: [
-      ...chromium.args,
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-    ],
-    defaultViewport: { width: 1366, height: 900 },
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: executablePath || undefined,
+    headless: chromium.headless,
   });
+
+  return browser;
 }
 
 // ---------------------------------------------------------------------------
