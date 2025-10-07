@@ -1,44 +1,33 @@
-import fs from "fs";
-import fsp from "fs/promises";
+import fs from "fs/promises";
 import path from "path";
 import type { VTAccount, VTStatus, VTStore } from "@/types/virtual-tracker";
 
-const STORE_DIR = path.resolve(process.cwd(), "src/data");
-const STORE_PATH = path.join(STORE_DIR, "virtual-tracker.json");
+const isVercel = !!process.env.VERCEL;
+const DATA_DIR =
+  process.env.DATA_DIR ||
+  (isVercel ? "/tmp/corevai-data" : path.join(process.cwd(), "data"));
+const STORE_PATH = path.join(DATA_DIR, "virtual-tracker.json");
 
-/** Ensure data directory & file exist */
-async function ensureStore() {
-  if (!fs.existsSync(STORE_DIR)) {
-    await fsp.mkdir(STORE_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(STORE_PATH)) {
-    const initial: VTStore = { accounts: [], statusByAccount: {} };
-    await fsp.writeFile(STORE_PATH, JSON.stringify(initial, null, 2), "utf8");
-  }
+async function ensureDir() {
+  await fs.mkdir(DATA_DIR, { recursive: true });
 }
 
 /** Read the entire store.json */
 export async function readStore(): Promise<VTStore> {
-  await ensureStore();
-  const raw = await fsp.readFile(STORE_PATH, "utf8");
+  await ensureDir();
   try {
-    const parsed = JSON.parse(raw) as VTStore;
-    // basic shape guard
-    return {
-      accounts: Array.isArray(parsed.accounts) ? parsed.accounts : [],
-      statusByAccount: parsed.statusByAccount ?? {},
-    };
+    const raw = await fs.readFile(STORE_PATH, "utf8");
+    return JSON.parse(raw) as VTStore;
   } catch {
-    const fallback: VTStore = { accounts: [], statusByAccount: {} };
-    await fsp.writeFile(STORE_PATH, JSON.stringify(fallback, null, 2), "utf8");
-    return fallback;
+    // first run
+    return { accounts: [], statusByAccount: {} };
   }
 }
 
 /** Persist the entire store.json */
 export async function writeStore(next: VTStore): Promise<void> {
-  await ensureStore();
-  await fsp.writeFile(STORE_PATH, JSON.stringify(next, null, 2), "utf8");
+  await ensureDir();
+  await fs.writeFile(STORE_PATH, JSON.stringify(next, null, 2), "utf8");
 }
 
 /** Convenience: list all accounts */
