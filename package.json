@@ -20,7 +20,7 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.6",
     "puppeteer": "^24.23.0",
-    "puppeteer-core": "^24.23.0",
+    "puppeteer-core": "^24.3.0",
     "react": "19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "19.1.0",
