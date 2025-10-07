@@ -46,3 +46,10 @@ next-env.d.ts
 chrome/
 node_modules/.cache/
 
+
+# Puppeteer / Chrome
+chrome/
+.cache/
+.local-browser/
+node_modules/.cache/
+
