@@ -15,29 +15,19 @@ const isServerless =
   !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
   process.env.NODE_ENV === "production";
 
-/**
- * Find an available Chrome or Chromium executable
- */
 async function resolveExecutablePath(): Promise<string | undefined> {
-  // 1. Use env if provided
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
     return process.env.PUPPETEER_EXECUTABLE_PATH;
   }
 
-  // 2. Sparticuz (Vercel) auto binary
   if (isServerless) {
-    try {
-      const p = await chromium.executablePath();
-      if (p) return p;
-    } catch (err) {
-      console.warn("[browser] chromium.executablePath() failed:", err);
-    }
+    const p = await chromium.executablePath();
+    return p;
   }
 
-  // 3. Local fallbacks
   const candidates = [
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/usr/bin/google-chrome",
     "/usr/bin/chromium",
     "/usr/bin/chromium-browser",
@@ -51,22 +41,24 @@ async function resolveExecutablePath(): Promise<string | undefined> {
   return undefined;
 }
 
-/**
- * Launch browser
- */
 export async function launchBrowser(): Promise<Browser> {
   const executablePath = await resolveExecutablePath();
 
-  const headlessEnv = (process.env.PUPPETEER_HEADLESS ?? "true").toLowerCase();
-  const headless = headlessEnv === "true" || headlessEnv === "1";
+  const headless = isServerless
+    ? true
+    : (process.env.PUPPETEER_HEADLESS ?? "true").toLowerCase() !== "false";
 
   const launchOpts: LaunchOptions = {
     headless,
     executablePath,
-    args: isServerless
-      ? chromium.args
-      : ["--no-sandbox", "--disable-dev-shm-usage"],
+    args: isServerless ? chromium.args : ["--no-sandbox", "--disable-dev-shm-usage"],
   };
+
+  if (isServerless && !executablePath) {
+    throw new Error(
+      "Serverless: chromium.executablePath() returned empty. Ensure '@sparticuz/chromium' is installed in dependencies and the build ran."
+    );
+  }
 
   console.log("[browser] Launch:", {
     env: isServerless ? "serverless" : "local",
