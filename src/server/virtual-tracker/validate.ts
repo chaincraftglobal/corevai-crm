@@ -31,10 +31,7 @@ export async function checkAuthForAccount(accountName: string): Promise<AuthChec
     // NOTE: validateCredentials must accept 4 params (loginUrl, username, password, options?)
     // Make sure your ./browser.ts signature matches:
     //   validateCredentials(loginUrl: string, username: string, password: string, options?: { timeout?: number; retryOnce?: boolean })
-    const result = await validateCredentials(loginUrl, account.username, account.password, {
-      timeout: 180000,  // 3 minutes
-      retryOnce: true,  // retry one time on first navigation failure
-    });
+    const result = await validateCredentials(loginUrl, account.username, account.password);
 
     return {
       ok: result.ok,

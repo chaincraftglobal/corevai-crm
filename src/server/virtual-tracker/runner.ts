@@ -36,10 +36,7 @@ export async function runAccount(account: VTAccount): Promise<RunnerOutcome> {
   }
 
   try {
-    const result = await validateCredentials(loginUrl, username, password, {
-      timeout: 240000, // 4 min
-      retryOnce: true,
-    });
+    const result = await validateCredentials(loginUrl, username, password);
 
     await setStatus(account.name, {
       account: account.name,
