@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "app/**": {
+      "includeFiles": [
+        "node_modules/@sparticuz/chromium/**"
+      ]
+    }
+  }
+}
