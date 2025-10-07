@@ -1,0 +1,52 @@
+{
+  "accounts": [
+    {
+      "name": "demo-account",
+      "schedule": "*/30 * * * *",
+      "sendOnNoTransactions": true
+    },
+    {
+      "name": "client-a",
+      "schedule": "0 9 * * *",
+      "sendOnNoTransactions": true
+    },
+    {
+      "name": "lacewing-technologies",
+      "schedule": "0 9 * * *",
+      "sendOnNoTransactions": true,
+      "notifyPref": "daily_9am",
+      "notifyOnRun": false,
+      "emailTo": null,
+      "weeklyMondayReport": false,
+      "monthlyReport": false
+    },
+    {
+      "name": "lw-2",
+      "schedule": "0 9 * * *",
+      "sendOnNoTransactions": true,
+      "notifyPref": "daily_9am",
+      "notifyOnRun": false,
+      "emailTo": null,
+      "weeklyMondayReport": false,
+      "monthlyReport": false
+    }
+  ],
+  "statusByAccount": {
+    "demo-account": {
+      "account": "demo-account",
+      "lastRunAt": "2025-10-06T17:00:05.123Z",
+      "result": "fail",
+      "rowsToday": 0,
+      "lastError": "text is not iterable",
+      "screenshotUrl": null
+    },
+    "lacewing-technologies": {
+      "account": "lacewing-technologies",
+      "lastRunAt": "2025-10-06T15:30:02.931Z",
+      "result": "fail",
+      "rowsToday": 0,
+      "lastError": "net::ERR_NAME_NOT_RESOLVED at https://merchant.evirtualpay.com/login",
+      "screenshotUrl": null
+    }
+  }
+}

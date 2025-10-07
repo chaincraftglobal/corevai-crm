@@ -1,0 +1,20 @@
+{
+  "accounts": [
+    {
+      "name": "Lacewing Technologies",
+      "username": "lacewinginfo@gmail.com",
+      "password": "xwILQsTT",
+      "loginUrl": "https://evirtualpay.com/v2/vp_interface/login",
+      "schedule": "*/30 * * * *",
+      "sendOnNoTransactions": false,
+      "notifyOnRun": false,
+      "weeklyReport": false,
+      "monthlyReport": false,
+      "result": "pending",
+      "rowsToday": 0,
+      "lastError": null,
+      "screenshotUrl": null
+    }
+  ],
+  "statusByAccount": {}
+}

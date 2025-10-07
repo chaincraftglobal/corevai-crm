@@ -1,103 +1,78 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main>
+      {/* Navbar */}
+      <nav className="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+        <div className="container">
+          <Link className="navbar-brand fw-semibold" href="/">Corevai-CRM</Link>
+          <div className="ms-auto">
+            <Link href="/login" className="btn btn-outline-primary">Login</Link>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="py-5 bg-light">
+        <div className="container">
+          <div className="row align-items-center">
+            <div className="col-lg-7">
+              <h1 className="display-5 fw-bold">Client Onboarding Automation</h1>
+              <p className="lead text-body-secondary mt-3">
+                Centralize emails, automate follow-ups and document reminders, and monitor eVirtualPay with Virtual Tracker.
+              </p>
+              <div className="mt-4 d-flex gap-2">
+                <Link href="/login" className="btn btn-primary btn-lg">Get Started</Link>
+                <Link href="/login" className="btn btn-outline-secondary btn-lg">Live Demo</Link>
+              </div>
+            </div>
+            <div className="col-lg-5 mt-4 mt-lg-0">
+              <div className="card shadow-sm">
+                <img
+                  alt="Corevai dashboard preview"
+                  className="card-img-top"
+                  src="https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=1200&auto=format&fit=crop"
+                />
+                <div className="card-body">
+                  <p className="card-text text-muted mb-0">
+                    Virtual Tracker: multi-account eVirtualPay health at a glance.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="row row-cols-1 row-cols-md-3 g-4 mt-2">
+            <div className="col">
+              <div className="card h-100 border-0">
+                <div className="card-body">
+                  <h5 className="card-title">Email Automation</h5>
+                  <p className="card-text text-body-secondary">48h / 5d / 10d / 15d follow-ups, auto-classified communications.</p>
+                </div>
+              </div>
+            </div>
+            <div className="col">
+              <div className="card h-100 border-0">
+                <div className="card-body">
+                  <h5 className="card-title">Docs & Tasks</h5>
+                  <p className="card-text text-body-secondary">12-hour reminders until submitted; Notion & Calendar sync.</p>
+                </div>
+              </div>
+            </div>
+            <div className="col">
+              <div className="card h-100 border-0">
+                <div className="card-body">
+                  <h5 className="card-title">Virtual Tracker</h5>
+                  <p className="card-text text-body-secondary">Multi-account eVirtualPay check with daily 9:00 AM digest.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
   );
 }

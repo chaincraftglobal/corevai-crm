@@ -1,4 +1,13 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* optional: tiny reset */
+html,
+body,
+#__next {
+  height: 100%
+}
 
 :root {
   --background: #ffffff;
